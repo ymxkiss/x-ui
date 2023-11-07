@@ -2,7 +2,7 @@ name: Release X-ui dockerhub
 on:
   push:
     tags:
-      - v*
+      - "*"
   workflow_dispatch:
 
 jobs:
