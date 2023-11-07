@@ -1,17 +1,18 @@
-FROM golang:latest AS builder
-WORKDIR /root
+FROM golang:1.20-alpine AS builder
+WORKDIR /app
+ARG TARGETARCH 
+RUN apk --no-cache --update add build-base gcc wget unzip
 COPY . .
-RUN go build main.go
+RUN env CGO_ENABLED=1 go build -o build/x-ui main.go
+RUN ./DockerInitFiles.sh "$TARGETARCH"
 
+FROM alpine
+LABEL org.opencontainers.image.authors="alireza7@gmail.com"
+ENV TZ=Asia/Tehran
+WORKDIR /app
 
-FROM debian:11-slim
-LABEL org.opencontainers.image.authors="admin@itsmeniduka.engineer"
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends -y ca-certificates \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENV TZ=Asia/Shanghai
-WORKDIR /root
-COPY --from=builder  /root/main /root/x-ui
-COPY ./bin/. /root/bin/.
+RUN apk add ca-certificates tzdata
+
+COPY --from=builder  /app/build/ /app/
 VOLUME [ "/etc/x-ui" ]
 CMD [ "./x-ui" ]
